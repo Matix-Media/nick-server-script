@@ -37,7 +37,7 @@ function ngrokOutputParse(line: string) {
     }
 }
 
-console.log(`Starting ngrok in "${rootDir}" with command "${ngrokCommand}"`);
+console.log(`Starting ngrok in "${rootDir}" with command "${ngrokCommand.split(" ")}"`);
 const ls = spawn("ngrok", ngrokCommand.split(" "), {cwd: rootDir});
 ls.stdout.on("data", ngrokOutputParse);
 ls.stderr.on("data", ngrokOutputParse);
