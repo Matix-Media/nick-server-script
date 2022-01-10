@@ -11,10 +11,32 @@ const ngrokTimeout: number = Number.parseInt(process.env.NGROK_TIMEOUT);
 const webhookLink: string = process.env.WEBHOOK_LINK;
 
 let ngrokStarted = false;
+let ls;
+
+function killNgrok() {
+
+    try {
+        ls.kill();
+    } catch (_) {}
+}
+
+const ngrokTimeoutWorker = setTimeout(() => {
+    if (ngrokStarted) return;
+
+    console.error("Ngrok not started within timeout of", ngrokTimeout, "milliseconds! Closing.");
+    killNgrok();
+}, ngrokTimeout);
 
 function ngrokOutputParse(bLine: Buffer) {
     const line = bLine.toString("utf-8");
     console.log(line);
+
+    if (line.includes("Your account is limited to")) {
+        console.error("Ngrok session limit reached! Closing.")
+        clearTimeout(ngrokTimeoutWorker);
+        killNgrok();
+        return;
+    }
 
     if (!line.includes("Forwarding")) return;
 
@@ -39,7 +61,7 @@ function ngrokOutputParse(bLine: Buffer) {
 }
 
 console.log(`Starting ngrok in "${rootDir}" with command "${ngrokCommand.split(" ")}"`);
-const ls = spawn("ngrok", ngrokCommand.split(" "), {cwd: rootDir});
+ls = spawn("ngrok", ngrokCommand.split(" "), {cwd: rootDir});
 ls.stdout.on("data", ngrokOutputParse);
 ls.stderr.on("data", ngrokOutputParse);
 ls.on("error", (error) => {
@@ -48,13 +70,3 @@ ls.on("error", (error) => {
 ls.on("close", code => {
     console.warn("Ngrok closed with code:", code);
 });
-
-
-setTimeout(() => {
-    if (ngrokStarted) return;
-
-    console.error("Ngrok not started within timeout of", ngrokTimeout, "milliseconds. Closing.")
-    try {
-        ls.kill();
-    } catch (_) {}
-}, ngrokTimeout);
