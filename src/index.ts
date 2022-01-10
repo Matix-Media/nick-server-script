@@ -35,7 +35,7 @@ const ls = spawn(ngrokCommand, {detached: true});
 ls.stdout.on("data", ngrokOutputParse);
 ls.stderr.on("data", ngrokOutputParse);
 ls.on("error", (error) => {
-    console.error("An error occurred while starting ngrok proxy!")
+    console.error("An error occurred while starting ngrok proxy:", error)
 });
 ls.on("close", code => {
     console.warn("Ngrok closed with code:", code);
