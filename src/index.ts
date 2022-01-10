@@ -7,7 +7,8 @@ import * as ngrok from "ngrok";
 config();
 
 const rootDir: string = process.env.ROOT_DIR;
-const webhookLink: string = process.env.WEBHOOK_LINK;
+const ipWebhookLink: string = process.env.IP_WEBHOOK_LINK;
+const chatWebhookLink: string = process.env.CHAT_WEBHOOK_LINK;
 const serverPort: number = Number.parseInt(process.env.SERVER_PORT);
 
 function startMinecraftServer(onChat = (username:string, message:string) => {}, onClose = (code: number) => {}): Promise<void> {
@@ -36,6 +37,14 @@ function startMinecraftServer(onChat = (username:string, message:string) => {}, 
     console.log("Starting Minecraft server...");
     await startMinecraftServer(async (username, message) => {
         console.log(`[Chat] ${username}: ${message}`);
+        const uuid: any = (await axios.get("https://api.mojang.com/users/profiles/minecraft/" + username)).data;
+        const iconUrl = "https://crafatar.com/avatars/" + uuid.id;
+
+        await axios.post(chatWebhookLink, {
+            content: message,
+            username: username,
+            avatar_url: iconUrl,
+        })
     }, async (code) => {
         console.error("Minecraft server stopped with code", code);
         await ngrok.disconnect(url);
@@ -46,7 +55,7 @@ function startMinecraftServer(onChat = (username:string, message:string) => {}, 
 
     console.log("Server reachable through:", url.replace("tcp://", ""));
 
-    await axios.post(webhookLink, {
+    await axios.post(ipWebhookLink, {
         embeds: [{
             title: "Neue Minecraft Server Adresse",
             description: "Der Minecraft Server hat eine neue Adresse zugewiesen bekommen.\n\n**IP**: `" + url.replace("tcp://", "") + "`",
