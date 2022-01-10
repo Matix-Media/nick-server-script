@@ -10,14 +10,16 @@ const rootDir: string = process.env.ROOT_DIR;
 const webhookLink: string = process.env.WEBHOOK_LINK;
 const serverPort: number = Number.parseInt(process.env.SERVER_PORT);
 
-function startMinecraftServer(onClose = (code: number) => {}): Promise<void> {
+function startMinecraftServer(onChat = (username:string, message:string) => {}, onClose = (code: number) => {}): Promise<void> {
     return new Promise<void>((resolve) => {
         const sp = spawn("start.bat", {cwd: rootDir});
         sp.stdout.on("data", (buffer: Buffer) => {
             const line = buffer.toString("utf-8");
 
-            console.log(line);
-
+            const chatCheck = line.match(/\s<(.*)>\s(.*)/);
+            if (chatCheck) 
+                onChat(chatCheck[0].replace(/[\&§]./g, ''), chatCheck[1].replace(/[\&§]./g, ''));
+            
             if (!line.includes("[Server thread/INFO]: Done") && !line.includes("! For help, type \"help\"")) return;
             resolve();
         });
@@ -32,7 +34,9 @@ function startMinecraftServer(onClose = (code: number) => {}): Promise<void> {
     let url: string;
     
     console.log("Starting Minecraft server...");
-    await startMinecraftServer(async (code) => {
+    await startMinecraftServer(async (username, message) => {
+        console.log(`[Chat] ${username}: ${message}`);
+    }, async (code) => {
         console.error("Minecraft server stopped with code", code);
         await ngrok.disconnect(url);
     });
@@ -40,12 +44,12 @@ function startMinecraftServer(onClose = (code: number) => {}): Promise<void> {
 
     url = await ngrok.connect({proto: "tcp", addr: serverPort});
 
-    console.log("Server reachable through:", url);
-    
-    axios.post(webhookLink, {
+    console.log("Server reachable through:", url.replace("tcp://", ""));
+
+    await axios.post(webhookLink, {
         embeds: [{
             title: "Neue Minecraft Server Adresse",
-            description: "Der Minecraft Server hat eine neue Adresse zugewiesen bekommen.\n\n**IP**: `" + url + "`",
+            description: "Der Minecraft Server hat eine neue Adresse zugewiesen bekommen.\n\n**IP**: `" + url.replace("tcp://", "") + "`",
             footer: {
                 text: "Offizieller Freudenhaus SMP Server HD LP xX Bot",
                 icon_url: "https://cdn.discordapp.com/icons/778965930746183691/1585148368fa55f3eff29557bc23d640.webp?size=32"
