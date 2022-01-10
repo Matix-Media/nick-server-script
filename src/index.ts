@@ -13,6 +13,8 @@ const webhookLink: string = process.env.WEBHOOK_LINK;
 let ngrokStarted = false;
 
 function ngrokOutputParse(line: string) {
+    console.log(line);
+
     if (!line.includes("Forwarding")) return;
 
     for (let part of line.split(" ")) {
