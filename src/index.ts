@@ -29,6 +29,7 @@ const ngrokTimeoutWorker = setTimeout(() => {
 
 function ngrokOutputParse(bLine: Buffer) {
     const line = bLine.toString("utf-8");
+
     console.log(line);
 
     if (line.includes("Your account is limited to")) {
