@@ -18,7 +18,7 @@ function startMinecraftServer(onChat = (username:string, message:string) => {}, 
 
             const chatCheck = line.match(/\s<(.*)>\s(.*)/);
             if (chatCheck) 
-                onChat(chatCheck[0].replace(/[\&§]./g, ''), chatCheck[1].replace(/[\&§]./g, ''));
+                onChat(chatCheck[1].replace(/[\&§]./g, ''), chatCheck[2].replace(/[\&§]./g, ''));
             
             if (!line.includes("[Server thread/INFO]: Done") && !line.includes("! For help, type \"help\"")) return;
             resolve();
