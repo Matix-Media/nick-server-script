@@ -10,6 +10,8 @@ const ngrokCommand: string = process.env.NGROK_COMMAND;
 const ngrokTimeout: number = Number.parseInt(process.env.NGROK_TIMEOUT);
 const webhookLink: string = process.env.WEBHOOK_LINK;
 
+let ngrokStarted = false;
+
 function ngrokOutputParse(line: string) {
     if (!line.includes("Forwarding")) return;
 
@@ -18,6 +20,7 @@ function ngrokOutputParse(line: string) {
         if (part == "" || part == null) continue;
         if (!part.includes("ngrok.io")) continue;
 
+        ngrokStarted = true;
         console.log("Ngrok IP:", part);
         axios.post(webhookLink, {
             embeds: [{
@@ -32,7 +35,8 @@ function ngrokOutputParse(line: string) {
     }
 }
 
-const ls = spawn(path.join(ngrokCommand), {detached: true, cwd: rootDir});
+console.log(`Starting ngrok in "${rootDir}" with command "${ngrokCommand}"`);
+const ls = spawn("ngrok.exe", ngrokCommand.split(" "), {detached: true, cwd: rootDir});
 ls.stdout.on("data", ngrokOutputParse);
 ls.stderr.on("data", ngrokOutputParse);
 ls.on("error", (error) => {
@@ -41,3 +45,13 @@ ls.on("error", (error) => {
 ls.on("close", code => {
     console.warn("Ngrok closed with code:", code);
 });
+
+
+setTimeout(() => {
+    if (ngrokStarted) return;
+
+    console.error("Ngrok not started within timeout of", ngrokTimeout, "milliseconds. Closing.")
+    try {
+        ls.kill();
+    } catch (_) {}
+}, ngrokTimeout);
