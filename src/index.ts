@@ -3,6 +3,7 @@ import {spawn} from "child_process";
 import axios from "axios";
 import * as path from "path";
 import * as ngrok from "ngrok";
+import * as images from "./images.json";
 
 config();
 
@@ -11,11 +12,14 @@ const ipWebhookLink: string = process.env.IP_WEBHOOK_LINK;
 const chatWebhookLink: string = process.env.CHAT_WEBHOOK_LINK;
 const serverPort: number = Number.parseInt(process.env.SERVER_PORT);
 
-function startMinecraftServer(onChat = (username:string, message:string) => {}, onClose = (code: number) => {}): Promise<void> {
+function startMinecraftServer(showLiveConsole = false, onChat = (username:string, message:string) => {}, onClose = (code: number) => {}): Promise<void> {
     return new Promise<void>((resolve) => {
         const sp = spawn("start.bat", {cwd: rootDir});
         sp.stdout.on("data", (buffer: Buffer) => {
             const line = buffer.toString("utf-8");
+
+            if (showLiveConsole)
+                console.log("[Live Console]", line.replace("\n", "").replace("\r", ""));
 
             const chatCheck = line.match(/\s<(.*)>\s(.*)/);
             if (chatCheck) 
@@ -35,7 +39,7 @@ function startMinecraftServer(onChat = (username:string, message:string) => {}, 
     let url: string;
     
     console.log("Starting Minecraft server...");
-    await startMinecraftServer(async (username, message) => {
+    await startMinecraftServer(true, async (username, message) => {
         console.log(`[Chat] ${username}: ${message}`);
         const uuid: any = (await axios.get("https://api.mojang.com/users/profiles/minecraft/" + username)).data;
         const iconUrl = "https://crafatar.com/avatars/" + uuid.id;
@@ -55,8 +59,11 @@ function startMinecraftServer(onChat = (username:string, message:string) => {}, 
 
     console.log("Server reachable through:", url.replace("tcp://", ""));
 
+    const user = images[Math.floor(Math.random() * images.length)];
     await axios.post(ipWebhookLink, {
         embeds: [{
+            avatar_url: user.url,
+            username: user.name,
             title: "Neue Minecraft Server Adresse",
             description: "Der Minecraft Server hat eine neue Adresse zugewiesen bekommen.\n\n**IP**: `" + url.replace("tcp://", "") + "`",
             footer: {
