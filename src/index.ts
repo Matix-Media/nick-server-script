@@ -11,8 +11,9 @@ const rootDir: string = process.env.ROOT_DIR;
 const ipWebhookLink: string = process.env.IP_WEBHOOK_LINK;
 const chatWebhookLink: string = process.env.CHAT_WEBHOOK_LINK;
 const serverPort: number = Number.parseInt(process.env.SERVER_PORT);
+const colorFilter = /[\&§]./g;
 
-function startMinecraftServer(showLiveConsole = false, onChat = (username:string, message:string) => {}, onClose = (code: number) => {}): Promise<void> {
+function startMinecraftServer(showLiveConsole = false, onClose = (code: number) => {}): Promise<void> {
     return new Promise<void>((resolve) => {
         const sp = spawn("start.bat", {cwd: rootDir});
         sp.stdout.on("data", (buffer: Buffer) => {
@@ -20,10 +21,6 @@ function startMinecraftServer(showLiveConsole = false, onChat = (username:string
 
             if (showLiveConsole)
                 console.log("[Live Console]", line.replace("\n", "").replace("\r", ""));
-
-            const chatCheck = line.match(/\s<(.*)>\s(.*)/);
-            if (chatCheck) 
-                onChat(chatCheck[1].replace(/[\&§]./g, ''), chatCheck[2].replace(/[\&§]./g, ''));
             
             if (!line.includes("[Server thread/INFO]: Done") && !line.includes("! For help, type \"help\"")) return;
             resolve();
@@ -39,17 +36,7 @@ function startMinecraftServer(showLiveConsole = false, onChat = (username:string
     let url: string;
     
     console.log("Starting Minecraft server...");
-    await startMinecraftServer(true, async (username, message) => {
-        console.log(`[Chat] ${username}: ${message}`);
-        const uuid: any = (await axios.get("https://api.mojang.com/users/profiles/minecraft/" + username)).data;
-        const iconUrl = "https://crafatar.com/avatars/" + uuid.id;
-
-        await axios.post(chatWebhookLink, {
-            content: message,
-            username: username,
-            avatar_url: iconUrl,
-        })
-    }, async (code) => {
+    await startMinecraftServer(true, async (code) => {
         console.error("Minecraft server stopped with code", code);
         await ngrok.disconnect(url);
     });
