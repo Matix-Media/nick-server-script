@@ -12,7 +12,8 @@ const webhookLink: string = process.env.WEBHOOK_LINK;
 
 let ngrokStarted = false;
 
-function ngrokOutputParse(line: string) {
+function ngrokOutputParse(bLine: Buffer) {
+    const line = bLine.toString("utf-8");
     console.log(line);
 
     if (!line.includes("Forwarding")) return;
