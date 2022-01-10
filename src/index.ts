@@ -32,7 +32,7 @@ function ngrokOutputParse(line: string) {
     }
 }
 
-const ls = spawn(path.join(rootDir, ngrokCommand), {detached: true});
+const ls = spawn(path.join(ngrokCommand), {detached: true, cwd: rootDir});
 ls.stdout.on("data", ngrokOutputParse);
 ls.stderr.on("data", ngrokOutputParse);
 ls.on("error", (error) => {
