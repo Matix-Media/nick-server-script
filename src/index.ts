@@ -1,6 +1,7 @@
 import {config} from "dotenv";
 import {spawn} from "child_process";
 import axios from "axios";
+import * as path from "path";
 
 config();
 
@@ -31,7 +32,7 @@ function ngrokOutputParse(line: string) {
     }
 }
 
-const ls = spawn(ngrokCommand, {detached: true});
+const ls = spawn(path.join(rootDir, ngrokCommand), {detached: true});
 ls.stdout.on("data", ngrokOutputParse);
 ls.stderr.on("data", ngrokOutputParse);
 ls.on("error", (error) => {
